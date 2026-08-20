@@ -1,7 +1,7 @@
 import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
-from sqlalchemy import String, Column, Integer, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import String, Column, Integer, Date, Boolean, ForeignKey, Text, UniqueConstraint
 
 
 class User(Base):
@@ -17,7 +17,7 @@ class User(Base):
 #   relationship to users-table
     posts: Mapped[list['Post']] = relationship(back_populates="author")
     comments: Mapped[list["Comment"]] = relationship(back_populates="comment_author")
-    user: Mapped[list[Like]] = relationship(back_populates="user")
+    likes: Mapped[list[Like]] = relationship(back_populates="user")
 
 class Post(Base):
     __tablename__ = 'posts'
