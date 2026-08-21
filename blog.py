@@ -2,8 +2,6 @@ from datetime import date
 
 from fastapi import Depends, APIRouter, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.persistence import post_update
-from sqlalchemy.sql.functions import current_user
 
 from database import SessionLocal
 from typing import Annotated
@@ -51,12 +49,6 @@ class PostUpdate(BaseModel):
     body: str
     slug: str
     date_posted: date = Field(default_factory=date.today)
-
-@router.get("/posts")
-async def get_posts(db:db_dependency):
-    posts = db.query(Post).all()
-    return posts
-
 
 @router.post("/create-post", response_model=PostResponse)
 async def create_post(db:db_dependency, post: PostCreate, user: Annotated[dict, Depends(get_current_user)]):

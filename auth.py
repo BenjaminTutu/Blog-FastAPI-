@@ -74,10 +74,11 @@ def authenticate_user(username: str, password: str, db: Session):
         return False
     return user_model
 
-def create_access_token(username:str, user_id: int, expires_delta: timedelta):
+def create_access_token(role: str, username:str, user_id: int, expires_delta: timedelta):
     payload = {
         "sub": username,
         "id": user_id,
+        "role": role,
         "exp": datetime.now(timezone.utc) + expires_delta,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -87,9 +88,10 @@ def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         user_id: int = payload.get("id")
+        role: str = payload.get("role")
         if username is None or user_id is None:
-            raise HTTPException(status_code=404, detail="Could not validate credentials")
-        return {'id': user_id, 'username': username}
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        return {'id': user_id, 'username': username, 'role': role}
     except JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
@@ -117,7 +119,7 @@ async def create_access_token_login(
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user or not bcrypt_context.verify(form_data.password, user.password):
         raise HTTPException(status_code=400, detail="Incorrect password")
-    token = create_access_token(user.username, user.id, timedelta(minutes=30))
+    token = create_access_token( user.role, user.username, user.id ,timedelta(minutes=30))
     return {"access_token": token, "token_type": "bearer"}
 
 

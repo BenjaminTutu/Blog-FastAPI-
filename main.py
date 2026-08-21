@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+import admin
 import auth
 import blog
 from database import Base, engine
@@ -20,6 +21,7 @@ async def home():
 
 app.include_router(blog.router)
 app.include_router(auth.router)
+app.include_router(admin.router)
 
 
 
