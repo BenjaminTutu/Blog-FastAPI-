@@ -3,11 +3,12 @@ from sqlalchemy.orm import Session
 
 
 from database import SessionLocal
-from typing import Annotated
+from typing import Annotated, List
 from pydantic import BaseModel, Field, ConfigDict
 from models import *
 from auth import get_current_user
 from blog import get_db
+from blog import PostResponse, CommentsResponse
 
 
 router = APIRouter(
@@ -19,13 +20,30 @@ db_dependency = Annotated[SessionLocal, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
-@router.get("/users")
-async def get_all_users(db:db_dependency, user: user_dependency):
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    is_active: bool = True
+    role: str = Field(default="user")
+
+    posts: list[PostResponse]
+    comments: list[CommentsResponse]
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users_and_posts(db:db_dependency, user: user_dependency):
     if user is None or user['role'] != 'admin':
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
     users = db.query(User).all()
     return users
 
+@router.get("/posts", response_model=List[PostResponse])
+async def get_all_posts(db:db_dependency, user: user_dependency):
+    if user is None or user['role'] != 'admin':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    posts = db.query(Post).all()
+    return posts
 
 @router.delete("/users/{user_id}")
 async def delete_user_by_id(db:db_dependency, user: user_dependency, user_id: int = Path(gt=0)):

@@ -4,7 +4,6 @@ from typing import Annotated
 from passlib.context import CryptContext
 
 from fastapi import APIRouter, HTTPException, Depends, status, Request
-from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session

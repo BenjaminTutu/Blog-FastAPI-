@@ -1,10 +1,10 @@
 from datetime import date
 
-from fastapi import Depends, APIRouter, HTTPException, status
+from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
 from database import SessionLocal
-from typing import Annotated
+from typing import Annotated, List
 from pydantic import BaseModel, Field, ConfigDict
 from models import *
 from auth import get_current_user
@@ -29,20 +29,35 @@ class AuthorResponse(BaseModel):
     username: str
     id: int
 
+    model_config = ConfigDict(from_attributes=True)
+
 class PostCreate(BaseModel):
     title: str
     body: str
     slug: str
     date_posted: date = Field(default_factory=date.today)
 
+
 class PostResponse(BaseModel):
     title: str = Field(min_length=3)
     body: str = Field(min_length=3, max_length=200)
     slug: str = Field(min_length=1)
     date_posted: date = Field(default_factory=date.today)
-    author: AuthorResponse
+    comments: List[CommentsResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+class CommentsResponse(BaseModel):
+    comment_body: str = Field(min_length=3)
+    comment_author: AuthorResponse
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommentCreate(BaseModel):
+   comment_body: str
+
+   model_config = ConfigDict(from_attributes=True)
 
 class PostUpdate(BaseModel):
     title: str
@@ -51,7 +66,10 @@ class PostUpdate(BaseModel):
     date_posted: date = Field(default_factory=date.today)
 
 @router.post("/create-post", response_model=PostResponse)
-async def create_post(db:db_dependency, post: PostCreate, user: Annotated[dict, Depends(get_current_user)]):
+async def create_post(db:db_dependency,
+                      post: PostCreate,
+                      user: Annotated[dict, Depends(get_current_user)]
+                      ):
 
     new_post = Post(
         title=post.title,
@@ -65,14 +83,49 @@ async def create_post(db:db_dependency, post: PostCreate, user: Annotated[dict, 
     db.refresh(new_post)
     return new_post
 
-@router.get("/post")
-async def get_post(db:db_dependency, user: Annotated[dict, Depends(get_current_user)]):
-    post = db.query(Post).filter(Post.author_id == user['id'] ).first()
-    if not post:
+@router.post(
+    "/create-comment/{post_id}/comment",
+    response_model=CommentsResponse)
+async def create_comment(db:db_dependency,
+                         post_id: int,
+                         comment: CommentCreate,
+                         user: Annotated[dict, Depends(get_current_user)]
+                         ):
+    posts = db.query(Post).filter(Post.id == post_id).first()
+    if not posts:
         raise HTTPException(status_code=404, detail="Post not found")
-    return post
 
-@router.put("/update-post/{post_id}", response_model=PostResponse)
+    new_comment = Comment(
+        comment_body=comment.comment_body,
+        post_id=post_id,
+        author_id=user['id']
+    )
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    return new_comment
+
+@router.get("/get_comments_by_user_id", response_model=List[CommentsResponse])
+async def get_comments(db:db_dependency, user: Annotated[dict, Depends(get_current_user)]):
+    comments = db.query(Comment).filter(Comment.author_id == user['id']).all()
+    if not comments:
+        raise HTTPException(status_code=404, detail="No comments found")
+    return comments
+
+@router.get("/post", response_model=List[PostResponse])
+async def get_post_by_user_id(
+    db: db_dependency,
+    user: Annotated[dict, Depends(get_current_user)]
+):
+    posts = db.query(Post).filter(Post.author_id == user["id"]).all()
+
+    if not posts:
+        raise HTTPException(status_code=404, detail="No posts found")
+
+    return posts
+
+
+@router.put("/update-post/{post_id}", response_model=List[PostResponse])
 async def update_post(db: db_dependency,
                       post: PostUpdate,
                       post_id: int,
