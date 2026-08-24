@@ -1,0 +1,1 @@
+A simple blog application built with FastAPI, SQLAlchemy, and Pydantic. The project provides APIs for user authentication, blog posts, and comments.
