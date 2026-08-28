@@ -24,10 +24,15 @@ def get_db():
         db.close()
 
 db_dependency =  Annotated[Session, Depends(get_db)]
-
 class AuthorResponse(BaseModel):
     username: str
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CommentsResponse(BaseModel):
+    comment_body: str = Field(min_length=3)
+    comment_author: AuthorResponse
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,12 +49,6 @@ class PostResponse(BaseModel):
     slug: str = Field(min_length=1)
     date_posted: date = Field(default_factory=date.today)
     comments: List[CommentsResponse]
-
-    model_config = ConfigDict(from_attributes=True)
-
-class CommentsResponse(BaseModel):
-    comment_body: str = Field(min_length=3)
-    comment_author: AuthorResponse
 
     model_config = ConfigDict(from_attributes=True)
 
