@@ -36,13 +36,6 @@ class CommentsResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class PostCreate(BaseModel):
-    title: str
-    body: str
-    slug: str
-    date_posted: date = Field(default_factory=date.today)
-
-
 class PostResponse(BaseModel):
     title: str = Field(min_length=3)
     body: str = Field(min_length=3, max_length=200)
@@ -52,6 +45,11 @@ class PostResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class PostCreate(BaseModel):
+    title: str
+    body: str
+    slug: str
+    date_posted: date = Field(default_factory=date.today)
 
 class CommentCreate(BaseModel):
    comment_body: str
